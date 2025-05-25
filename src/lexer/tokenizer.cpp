@@ -33,7 +33,7 @@ static const std::unordered_map<char, TokenType> kSpecialOperators = {
     {'.', TokenType::kDot},
     {',', TokenType::kComma},
     {':', TokenType::kColon},
-    {';', TokenType::kSemicolon},  // Semicolon is special
+    {';', TokenType::kSemicolon},
     {'(', TokenType::kLeftParenthesis},
     {')', TokenType::kRightParenthesis},
     {'{', TokenType::kLeftBrace},
