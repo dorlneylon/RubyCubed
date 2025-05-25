@@ -1,6 +1,3 @@
-.text
-.globl _start
-
 _start:
     li t0, 5
     mv t2, t0
