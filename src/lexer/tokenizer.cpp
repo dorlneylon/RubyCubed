@@ -343,14 +343,26 @@ std::vector<TokenVariant> Tokenizer::TokenizeVariant() {
 void Tokenizer::ProcessToken(const Token& token) {
   if (token.type == TokenType::kInteger || token.type == TokenType::kFloat) {
     ProcessNumericToken(token);
-  } else if (token.type == TokenType::kString) {
+    return;
+  }
+
+  if (token.type == TokenType::kString) {
     ProcessStringToken(token);
-  } else if (IsBracketToken(token.type)) {
+    return;
+  }
+
+  if (IsBracketToken(token.type)) {
     tokens_.push_back(CreateBracketToken(token));
-  } else if (token.type == TokenType::kDot) {
+    return;
+  }
+
+  if (token.type == TokenType::kDot) {
     ProcessDotToken(token);
-  } else if (token.type != TokenType::kEndOfFile &&
-             token.type != TokenType::kNewline) {
+    return;
+  }
+
+  if (token.type != TokenType::kEndOfFile &&
+      token.type != TokenType::kNewline) {
     ProcessSymbolToken(token);
   }
 }

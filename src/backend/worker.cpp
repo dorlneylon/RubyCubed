@@ -210,7 +210,8 @@ void Worker::ProcessVariableStore(const std::string& var_name,
                                   std::stringstream& assembly) {
   if (current_function_.empty()) {
     if (globals_.find(var_name) == globals_.end()) {
-      globals_[var_name] = globals_.size() * 4;
+      const int kInitialOffset = 25000;
+      globals_[var_name] = kInitialOffset + globals_.size() * 4;
     }
     int offset = globals_[var_name];
     assembly << "    sw x3, " << offset << ", x5\n";

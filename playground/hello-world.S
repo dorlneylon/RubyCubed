@@ -1,37 +1,27 @@
 _start:
-    li x5, 1
-    sw x3, 25000, x5
-    li x5, 10
-    sw x3, 25004, x5
-    jal x0, loop_start_0
-loop_body_1:
-    lw x5, x3, 25000
-    add x7, x5, x0
-    lw x5, x3, 25004
-    add x6, x5, x0
-    add x5, x7, x0
-    mul x5, x5, x6
-    sw x3, 25000, x5
-    lw x5, x3, 25004
-    li x6, 1
-    sub x5, x5, x6
-    sw x3, 25004, x5
-loop_start_0:
-    lw x5, x3, 25004
-    li x6, 0
-    slt x5, x6, x5
-    bne x5, x0, loop_body_1
-loop_end_2:
-    lw x5, x3, 25000
+    li x5, str_0
     addi x2, x2, -4
     sw x2, 0, x5
     add x10, x5, x0
-    li x20, 1
+    li x20, 0
     jal x1, runtime_puts
     li x5, 0
     addi x2, x2, 4
     ebreak
 
+str_0:
+    data 72 * 1
+    data 101 * 1
+    data 108 * 1
+    data 108 * 1
+    data 111 * 1
+    data 32 * 1
+    data 119 * 1
+    data 111 * 1
+    data 114 * 1
+    data 108 * 1
+    data 100 * 1
+    data 0 * 1
 
 # --- Runtime Helper Functions ---
 runtime_puts_newline:
