@@ -1,0 +1,7 @@
+BasedOnStyle: Google
+DerivePointerAlignment: false
+PointerAlignment: Left
+AlignOperands: true
+IndentWidth: 2 
+AccessModifierOffset: -1 
+AllowShortFunctionsOnASingleLine: None
