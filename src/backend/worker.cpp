@@ -12,20 +12,19 @@ namespace backend {
 Worker::Worker(parser::AstNode root) : root_(std::move(root)) {
 }
 
-const std::unordered_map<std::string, std::string>
-    Worker::kBinaryOpInstructions = {
-        {"+", "    add t0, t0, t1\n"},
-        {"-", "    sub t0, t0, t1\n"},
-        {"*", "    mul t0, t0, t1\n"},
-        {"/", "    div t0, t0, t1\n"},
-        {"<", "    slt t0, t0, t1\n"},
-        {">", "    slt t0, t1, t0\n"},
-        {"<=", "    slt t0, t1, t0\n    xori t0, t0, 1\n"},
-        {">=", "    slt t0, t0, t1\n    xori t0, t0, 1\n"},
-        {"==", "    xor t0, t0, t1\n    seqz t0, t0\n"},
-        {"!=", "    xor t0, t0, t1\n    snez t0, t0\n"}};
+const Worker::StringTable Worker::kBinaryOpInstructions = {
+    {"+", "    add t0, t0, t1\n"},
+    {"-", "    sub t0, t0, t1\n"},
+    {"*", "    mul t0, t0, t1\n"},
+    {"/", "    div t0, t0, t1\n"},
+    {"<", "    slt t0, t0, t1\n"},
+    {">", "    slt t0, t1, t0\n"},
+    {"<=", "    slt t0, t1, t0\n    xori t0, t0, 1\n"},
+    {">=", "    slt t0, t0, t1\n    xori t0, t0, 1\n"},
+    {"==", "    xor t0, t0, t1\n    seqz t0, t0\n"},
+    {"!=", "    xor t0, t0, t1\n    snez t0, t0\n"}};
 
-const std::unordered_map<std::string, std::string> Worker::kRuntimeHelpers = {
+const Worker::StringTable Worker::kRuntimeHelpers = {
     {"runtime_puts",
      "runtime_puts:\n"
      "    # a0 contains the address of the string or an integer\n"
@@ -124,33 +123,56 @@ std::string Worker::GenerateAssembly() {
 void Worker::ProcessNode(parser::AstNode node, std::stringstream& assembly) {
   if (auto program = std::dynamic_pointer_cast<parser::Program>(node)) {
     ProcessProgram(std::move(program), assembly);
-  } else if (auto expr_stmt =
-                 std::dynamic_pointer_cast<parser::ExpressionStatement>(node)) {
-    ProcessExpressionStatement(std::move(expr_stmt), assembly);
-  } else if (auto var_decl =
-                 std::dynamic_pointer_cast<parser::VariableDeclaration>(node)) {
-    ProcessVariableDeclaration(std::move(var_decl), assembly);
-  } else if (auto block =
-                 std::dynamic_pointer_cast<parser::BlockStatement>(node)) {
-    ProcessBlockStatement(std::move(block), assembly);
-  } else if (auto if_stmt =
-                 std::dynamic_pointer_cast<parser::IfStatement>(node)) {
-    ProcessIfStatement(std::move(if_stmt), assembly);
-  } else if (auto while_stmt =
-                 std::dynamic_pointer_cast<parser::WhileStatement>(node)) {
-    ProcessWhileStatement(std::move(while_stmt), assembly);
-  } else if (auto times_stmt =
-                 std::dynamic_pointer_cast<parser::TimesStatement>(node)) {
-    ProcessTimesStatement(std::move(times_stmt), assembly);
-  } else if (auto func_decl =
-                 std::dynamic_pointer_cast<parser::FunctionDeclaration>(node)) {
-    ProcessFunctionDeclaration(std::move(func_decl), assembly);
-  } else if (auto return_stmt =
-                 std::dynamic_pointer_cast<parser::ReturnStatement>(node)) {
-    ProcessReturnStatement(std::move(return_stmt), assembly);
-  } else {
-    throw std::runtime_error("Unknown node type in ProcessNode");
+    return;
   }
+
+  if (auto expr_stmt =
+          std::dynamic_pointer_cast<parser::ExpressionStatement>(node)) {
+    ProcessExpressionStatement(std::move(expr_stmt), assembly);
+    return;
+  }
+
+  if (auto var_decl =
+          std::dynamic_pointer_cast<parser::VariableDeclaration>(node)) {
+    ProcessVariableDeclaration(std::move(var_decl), assembly);
+    return;
+  }
+
+  if (auto block = std::dynamic_pointer_cast<parser::BlockStatement>(node)) {
+    ProcessBlockStatement(std::move(block), assembly);
+    return;
+  }
+
+  if (auto if_stmt = std::dynamic_pointer_cast<parser::IfStatement>(node)) {
+    ProcessIfStatement(std::move(if_stmt), assembly);
+    return;
+  }
+
+  if (auto while_stmt =
+          std::dynamic_pointer_cast<parser::WhileStatement>(node)) {
+    ProcessWhileStatement(std::move(while_stmt), assembly);
+    return;
+  }
+
+  if (auto times_stmt =
+          std::dynamic_pointer_cast<parser::TimesStatement>(node)) {
+    ProcessTimesStatement(std::move(times_stmt), assembly);
+    return;
+  }
+
+  if (auto func_decl =
+          std::dynamic_pointer_cast<parser::FunctionDeclaration>(node)) {
+    ProcessFunctionDeclaration(std::move(func_decl), assembly);
+    return;
+  }
+
+  if (auto return_stmt =
+          std::dynamic_pointer_cast<parser::ReturnStatement>(node)) {
+    ProcessReturnStatement(std::move(return_stmt), assembly);
+    return;
+  }
+
+  throw std::runtime_error("Unknown node type in ProcessNode");
 }
 
 void Worker::ProcessProgram(std::shared_ptr<parser::Program> program,
@@ -181,13 +203,14 @@ void Worker::ProcessVariableStore(const std::string& var_name,
     }
     int offset = globals_[var_name];
     assembly << "    sw t0, " << offset << "(gp)\n";
-  } else {
-    if (locals_.find(var_name) == locals_.end()) {
-      locals_[var_name] = -(locals_.size() + 1) * 4;
-    }
-    int offset = locals_[var_name];
-    assembly << "    sw t0, " << offset << "(fp)\n";
+    return;
   }
+
+  if (locals_.find(var_name) == locals_.end()) {
+    locals_[var_name] = -(locals_.size() + 1) * 4;
+  }
+  int offset = locals_[var_name];
+  assembly << "    sw t0, " << offset << "(fp)\n";
 }
 
 void Worker::ProcessBlockStatement(
@@ -329,26 +352,40 @@ void Worker::ProcessExpression(std::shared_ptr<parser::Expression> expr,
                                std::stringstream& assembly) {
   if (auto int_lit = std::dynamic_pointer_cast<parser::IntegerLiteral>(expr)) {
     ProcessIntegerLiteral(std::move(int_lit), assembly);
-  } else if (auto float_lit =
-                 std::dynamic_pointer_cast<parser::FloatLiteral>(expr)) {
-    ProcessFloatLiteral(std::move(float_lit), assembly);
-  } else if (auto str_lit =
-                 std::dynamic_pointer_cast<parser::StringLiteral>(expr)) {
-    ProcessStringLiteral(std::move(str_lit), assembly);
-  } else if (auto id = std::dynamic_pointer_cast<parser::Identifier>(expr)) {
-    ProcessIdentifier(std::move(id), assembly);
-  } else if (auto binary =
-                 std::dynamic_pointer_cast<parser::BinaryExpression>(expr)) {
-    ProcessBinaryExpression(std::move(binary), assembly);
-  } else if (auto unary =
-                 std::dynamic_pointer_cast<parser::UnaryExpression>(expr)) {
-    ProcessUnaryExpression(std::move(unary), assembly);
-  } else if (auto call =
-                 std::dynamic_pointer_cast<parser::CallExpression>(expr)) {
-    ProcessCallExpression(std::move(call), assembly);
-  } else {
-    throw std::runtime_error("Unknown expression type in ProcessExpression");
+    return;
   }
+
+  if (auto float_lit = std::dynamic_pointer_cast<parser::FloatLiteral>(expr)) {
+    ProcessFloatLiteral(std::move(float_lit), assembly);
+    return;
+  }
+
+  if (auto str_lit = std::dynamic_pointer_cast<parser::StringLiteral>(expr)) {
+    ProcessStringLiteral(std::move(str_lit), assembly);
+    return;
+  }
+
+  if (auto id = std::dynamic_pointer_cast<parser::Identifier>(expr)) {
+    ProcessIdentifier(std::move(id), assembly);
+    return;
+  }
+
+  if (auto binary = std::dynamic_pointer_cast<parser::BinaryExpression>(expr)) {
+    ProcessBinaryExpression(std::move(binary), assembly);
+    return;
+  }
+
+  if (auto unary = std::dynamic_pointer_cast<parser::UnaryExpression>(expr)) {
+    ProcessUnaryExpression(std::move(unary), assembly);
+    return;
+  }
+
+  if (auto call = std::dynamic_pointer_cast<parser::CallExpression>(expr)) {
+    ProcessCallExpression(std::move(call), assembly);
+    return;
+  }
+
+  throw std::runtime_error("Unknown expression type in ProcessExpression");
 }
 
 void Worker::ProcessIntegerLiteral(
@@ -376,14 +413,20 @@ void Worker::ProcessIdentifier(std::shared_ptr<parser::Identifier> id,
 
   if (!current_function_.empty() && params_.find(name) != params_.end()) {
     HandleParameterVariable(name, assembly);
-  } else if (!current_function_.empty() &&
-             locals_.find(name) != locals_.end()) {
-    HandleLocalVariable(name, assembly);
-  } else if (globals_.find(name) != globals_.end()) {
-    HandleGlobalVariable(name, assembly);
-  } else {
-    throw std::runtime_error("Undefined variable: " + name);
+    return;
   }
+
+  if (!current_function_.empty() && locals_.find(name) != locals_.end()) {
+    HandleLocalVariable(name, assembly);
+    return;
+  }
+
+  if (globals_.find(name) != globals_.end()) {
+    HandleGlobalVariable(name, assembly);
+    return;
+  }
+
+  throw std::runtime_error("Undefined variable: " + name);
 }
 
 void Worker::HandleParameterVariable(const std::string& name,
