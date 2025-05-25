@@ -33,47 +33,45 @@ const Worker::StringTable Worker::kBinaryOpInstructions = {
 const Worker::StringTable Worker::kRuntimeHelpers = {
     {"runtime_puts",
      "runtime_puts:\n"
-     "    # x10 contains the address of the string or an integer\n"
-     "    li x6, 268435456\n"
-     "    bge x10, x6, runtime_puts_string\n"},
+     "    beq x20, x0, runtime_puts_string  # String if x20=0\n"
+     "    jal x0, runtime_puts_int          # Else, print integer\n"},
     {"runtime_puts_int",
      "runtime_puts_int:\n"
-     "    add x5, x10, x0\n"
-     "    li x6, 0\n"
-     "    bge x5, x0, runtime_puts_int_process\n"
-     "    sub x5, x0, x5\n"
-     "    li x6, 1\n"},
-    {"runtime_puts_int_process",
-     "runtime_puts_int_process:\n"
-     "    # Convert integer to string\n"
-     "    addi x2, x2, -40\n"
-     "    add x7, x2, x0\n"
-     "    li x28, 10\n"},
-    {"runtime_puts_int_loop",
-     "runtime_puts_int_loop:\n"
-     "    rem x29, x5, x28\n"
-     "    addi x29, x29, 48\n"
-     "    sw x7, 0, x29\n"
-     "    addi x7, x7, 1\n"
-     "    div x5, x5, x28\n"
-     "    bne x5, x0, runtime_puts_int_loop\n"
-     "    beq x6, x0, runtime_puts_int_print\n"
-     "    li x29, 45\n"
-     "    sw x7, 0, x29\n"
-     "    addi x7, x7, 1\n"},
-    {"runtime_puts_int_print",
-     "runtime_puts_int_print:\n"
-     "    addi x7, x7, -1\n"},
-    {"runtime_puts_int_print_loop",
-     "runtime_puts_int_print_loop:\n"
-     "    lw x5, x7, 0\n"
+     "    addi x2, x2, 1488\n"
+     "    add x5, x10, x0       # x5 = input number\n"
+     "    li x6, 0              # x6 = digit count\n"
+     "    beq x5, x0, runtime_zero      # Handle zero directly\n"
+     "    li x7, 0              # x7 = sign flag (0=positive)\n"
+     "    bge x5, x0, runtime_extract   # Skip if positive\n"
+     "    sub x5, x0, x5        # Make number positive\n"
+     "    li x7, 1              # Set sign flag\n"
+     "runtime_extract:\n"
+     "    li x28, 10            # Divisor = 10\n"
+     "runtime_loop:\n"
+     "    rem x29, x5, x28      # x29 = x5 % 10\n"
+     "    addi x29, x29, 48     # Convert to ASCII\n"
+     "    addi x2, x2, -1       # Allocate stack cell\n"
+     "    sw x2, 0, x29         # Push digit\n"
+     "    addi x6, x6, 1        # Increment digit count\n"
+     "    div x5, x5, x28       # x5 = x5 / 10\n"
+     "    bne x5, x0, runtime_loop      # Repeat until x5=0\n"
+     "    beq x7, x0, runtime_print     # Skip '-' if positive\n"
+     "    li x5, 45             # Load '-'\n"
+     "    ewrite x5             # Print '-'\n"
+     "runtime_print:\n"
+     "    beq x6, x0, runtime_done      # Exit when all digits printed\n"
+     "    lw x5, x2, 0          # Pop digit\n"
+     "    ewrite x5             # Print it\n"
+     "    addi x2, x2, 1        # Free stack cell\n"
+     "    addi x6, x6, -1       # Decrement count\n"
+     "    jal x0, runtime_print         # Repeat\n"
+     "runtime_zero:\n"
+     "    li x5, 48             # '0'\n"
      "    ewrite x5\n"
-     "    addi x7, x7, -1\n"
-     "    bge x7, x2, runtime_puts_int_print_loop\n"
-     "    li x5, 10\n"
+     "runtime_done:\n"
+     "    li x5, 10             # Newline\n"
      "    ewrite x5\n"
-     "    addi x2, x2, 40\n"
-     "    jalr x0, x1, 0\n"},
+     "    jalr x0, x1, 0        # Return\n"},
     {"runtime_puts_string",
      "runtime_puts_string:\n"
      "    lw x5, x10, 0\n"
@@ -174,8 +172,24 @@ void Worker::ProcessNode(parser::AstNode node, std::stringstream& assembly) {
 
 void Worker::ProcessProgram(std::shared_ptr<parser::Program> program,
                             std::stringstream& assembly) {
+  std::vector<std::shared_ptr<parser::FunctionDeclaration>> functions;
+  std::vector<std::shared_ptr<parser::Statement>> other_statements;
+
   for (const auto& stmt : program->GetStatements()) {
+    if (auto func_decl =
+            std::dynamic_pointer_cast<parser::FunctionDeclaration>(stmt)) {
+      functions.push_back(func_decl);
+    } else {
+      other_statements.push_back(stmt);
+    }
+  }
+
+  for (const auto& stmt : other_statements) {
     ProcessNode(stmt, assembly);
+  }
+
+  for (const auto& func : functions) {
+    ProcessNode(func, assembly);
   }
 }
 
@@ -292,21 +306,22 @@ void Worker::ProcessFunctionDeclaration(
     params_[parameters[i]] = (i + 2) * 4;
   }
 
+  function_epilogues_[current_function_] = GenerateLabel("func_epilogue");
+
   assembly << func_decl->GetName() << ":\n";
 
   GenerateFunctionPrologue(assembly);
 
-  if (parameters.size() >= 2) {
-    assembly << "    lw x5, x8, 8\n";
-    assembly << "    lw x6, x8, 12\n";
+  const int kParameters = 8;
+  for (size_t i = 0; i < parameters.size() && i < kParameters; i++) {
+    assembly << "    lw x" << (5 + i) << ", x8, " << (i + 2) * 4 << "\n";
   }
 
   ProcessNode(func_decl->GetBody(), assembly);
 
   assembly << "    li x10, 0\n";
 
-  std::string epilogue_label = GenerateLabel("func_epilogue");
-  GenerateFunctionEpilogue(epilogue_label, assembly);
+  GenerateFunctionEpilogue(function_epilogues_[current_function_], assembly);
 
   current_function_ = prev_function;
   locals_ = prev_locals;
@@ -342,7 +357,7 @@ void Worker::ProcessReturnStatement(
     assembly << "    li x10, 0\n";
   }
 
-  assembly << "    jal x0, func_epilogue_" << (label_counter_ - 1) << "\n";
+  assembly << "    jal x0, " << function_epilogues_[current_function_] << "\n";
 }
 
 void Worker::ProcessExpression(std::shared_ptr<parser::Expression> expr,
@@ -601,11 +616,16 @@ void Worker::ProcessBuiltInFunction(
   if (func_name == "puts") {
     if (!args.empty()) {
       assembly << "    add x10, x5, x0\n";
+      if (std::dynamic_pointer_cast<parser::StringLiteral>(args[0])) {
+        assembly << "    li x20, 0\n";
+      } else {
+        assembly << "    li x20, 1\n";
+      }
     } else {
       assembly << "    li x10, 0\n";
+      assembly << "    li x20, 0\n";
     }
     assembly << "    jal x1, runtime_puts\n";
-
     assembly << "    li x5, 0\n";
   }
 }

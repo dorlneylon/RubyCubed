@@ -1,43 +1,4 @@
 _start:
-    li x5, 5
-    add x7, x5, x0
-    li x5, 10
-    li x6, 2
-    add x5, x5, x6
-    add x6, x5, x0
-    add x5, x7, x0
-    mul x5, x5, x6
-    li x6, 2
-    div x5, x5, x6
-    sw x3, 0, x5
-    lw x5, x3, 0
-    li x6, 2
-    seq x5, x5, x6
-    beq x5, x0, else_0
-    li x5, 3
-    li x6, 0
-times_loop_start_2:
-    bge x6, x5, times_loop_end_3
-    lw x5, x3, 0
-    add x7, x5, x0
-    lw x5, x3, 0
-    add x6, x5, x0
-    add x5, x7, x0
-    mul x5, x5, x6
-    sw x3, 0, x5
-    addi x6, x6, 1
-    jal x0, times_loop_start_2
-times_loop_end_3:
-    lw x5, x3, 0
-    addi x2, x2, -4
-    sw x2, 0, x5
-    add x10, x5, x0
-    li x20, 1
-    jal x1, runtime_puts
-    li x5, 0
-    addi x2, x2, 4
-    jal x0, endif_1
-else_0:
     li x5, str_0
     addi x2, x2, -4
     sw x2, 0, x5
@@ -46,24 +7,20 @@ else_0:
     jal x1, runtime_puts
     li x5, 0
     addi x2, x2, 4
-    lw x5, x3, 0
-    addi x2, x2, -4
-    sw x2, 0, x5
-    add x10, x5, x0
-    li x20, 1
-    jal x1, runtime_puts
-    li x5, 0
-    addi x2, x2, 4
-endif_1:
     ebreak
 
 str_0:
-    data 117 * 1
-    data 110 * 1
-    data 115 * 1
-    data 117 * 1
-    data 114 * 1
+    data 72 * 1
     data 101 * 1
+    data 108 * 1
+    data 108 * 1
+    data 111 * 1
+    data 32 * 1
+    data 119 * 1
+    data 111 * 1
+    data 114 * 1
+    data 108 * 1
+    data 100 * 1
     data 0 * 1
 
 # --- Runtime Helper Functions ---

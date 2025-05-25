@@ -9,5 +9,5 @@ def factorial n
     return f
 end
 
-# prints factorial of 10
-puts factorial(10)
+# prints factorial of 5 
+puts factorial(5)

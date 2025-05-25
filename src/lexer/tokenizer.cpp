@@ -329,15 +329,15 @@ std::vector<Token> Tokenizer::Tokenize() {
 }
 
 std::vector<TokenVariant> Tokenizer::TokenizeVariant() {
-  std::vector<Token> basic_tokens = this->Tokenize();
+  std::vector<Token> basic_tokens = Tokenize();
 
-  this->tokens_.clear();
-  this->current_token_ = 0;
+  tokens_.clear();
+  current_token_ = 0;
 
   for (const auto& token : basic_tokens) {
     ProcessToken(token);
   }
-  return this->tokens_;
+  return tokens_;
 }
 
 void Tokenizer::ProcessToken(const Token& token) {
@@ -346,7 +346,7 @@ void Tokenizer::ProcessToken(const Token& token) {
   } else if (token.type == TokenType::kString) {
     ProcessStringToken(token);
   } else if (IsBracketToken(token.type)) {
-    this->tokens_.push_back(CreateBracketToken(token));
+    tokens_.push_back(CreateBracketToken(token));
   } else if (token.type == TokenType::kDot) {
     ProcessDotToken(token);
   } else if (token.type != TokenType::kEndOfFile &&
