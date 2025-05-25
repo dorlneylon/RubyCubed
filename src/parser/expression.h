@@ -7,6 +7,7 @@ namespace parser {
 class Object {
  public:
   virtual ~Object() = default;
+  virtual std::string ToString(int indent = 0) const = 0;
 };
 
 class Expression : public Object {

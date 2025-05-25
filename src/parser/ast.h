@@ -5,10 +5,15 @@
 #include <vector>
 
 #include "expression.h"
+#include "fmt/format.h"
 
 namespace parser {
 
 using AstNode = std::shared_ptr<Object>;
+
+inline std::string Indent(int level) {
+  return std::string(level * 2, ' ');
+}
 
 class IntegerLiteral : public Expression {
  public:
@@ -16,6 +21,10 @@ class IntegerLiteral : public Expression {
   }
   int GetValue() const {
     return value_;
+  }
+
+  std::string ToString(int indent = 0) const override {
+    return fmt::format("{}IntegerLiteral({})", Indent(indent), value_);
   }
 
  private:
@@ -30,6 +39,10 @@ class FloatLiteral : public Expression {
     return value_;
   }
 
+  std::string ToString(int indent = 0) const override {
+    return fmt::format("{}FloatLiteral({})", Indent(indent), value_);
+  }
+
  private:
   double value_;
 };
@@ -38,8 +51,13 @@ class StringLiteral : public Expression {
  public:
   explicit StringLiteral(const std::string& value) : value_(value) {
   }
+
   const std::string& GetValue() const {
     return value_;
+  }
+
+  std::string ToString(int indent = 0) const override {
+    return fmt::format("{}StringLiteral(\"{}\")", Indent(indent), value_);
   }
 
  private:
@@ -52,6 +70,10 @@ class Identifier : public Expression {
   }
   const std::string& GetName() const {
     return name_;
+  }
+
+  std::string ToString(int indent = 0) const override {
+    return fmt::format("{}Identifier(\"{}\")", Indent(indent), name_);
   }
 
  private:
@@ -75,6 +97,12 @@ class BinaryExpression : public Expression {
     return right_;
   }
 
+  std::string ToString(int indent = 0) const override {
+    return fmt::format("{}BinaryExpression(operator=\"{}\")\n{}\n{}",
+                       Indent(indent), operator_, left_->ToString(indent + 1),
+                       right_->ToString(indent + 1));
+  }
+
  private:
   std::shared_ptr<Expression> left_;
   std::string operator_;
@@ -92,6 +120,11 @@ class UnaryExpression : public Expression {
   }
   std::shared_ptr<Expression> GetExpression() const {
     return expression_;
+  }
+
+  std::string ToString(int indent = 0) const override {
+    return fmt::format("{}UnaryExpression(operator=\"{}\")\n{}", Indent(indent),
+                       operator_, expression_->ToString(indent + 1));
   }
 
  private:
@@ -113,6 +146,18 @@ class CallExpression : public Expression {
     return arguments_;
   }
 
+  std::string ToString(int indent = 0) const override {
+    std::string result = fmt::format("{}CallExpression\n{}", Indent(indent),
+                                     callee_->ToString(indent + 1));
+    if (!arguments_.empty()) {
+      result += fmt::format("\n{}Arguments:", Indent(indent + 1));
+      for (const auto& arg : arguments_) {
+        result += fmt::format("\n{}", arg->ToString(indent + 2));
+      }
+    }
+    return result;
+  }
+
  private:
   std::shared_ptr<Expression> callee_;
   std::vector<std::shared_ptr<Expression>> arguments_;
@@ -130,6 +175,11 @@ class ExpressionStatement : public Statement {
   }
   std::shared_ptr<Expression> GetExpression() const {
     return expression_;
+  }
+
+  std::string ToString(int indent = 0) const override {
+    return fmt::format("{}ExpressionStatement\n{}", Indent(indent),
+                       expression_->ToString(indent + 1));
   }
 
  private:
@@ -150,6 +200,13 @@ class VariableDeclaration : public Statement {
     return initializer_;
   }
 
+  std::string ToString(int indent = 0) const override {
+    return fmt::format("{}VariableDeclaration(name=\"{}\")\n{}", Indent(indent),
+                       name_,
+                       initializer_ ? initializer_->ToString(indent + 1)
+                                    : Indent(indent + 1) + "<no initializer>");
+  }
+
  private:
   std::string name_;
   std::shared_ptr<Expression> initializer_;
@@ -163,6 +220,18 @@ class BlockStatement : public Statement {
 
   const std::vector<std::shared_ptr<Statement>>& GetStatements() const {
     return statements_;
+  }
+
+  std::string ToString(int indent = 0) const override {
+    std::string result = fmt::format("{}BlockStatement", Indent(indent));
+    if (statements_.empty()) {
+      result += " <empty>";
+    } else {
+      for (const auto& stmt : statements_) {
+        result += fmt::format("\n{}", stmt->ToString(indent + 1));
+      }
+    }
+    return result;
   }
 
  private:
@@ -189,6 +258,18 @@ class IfStatement : public Statement {
     return alternative_;
   }
 
+  std::string ToString(int indent = 0) const override {
+    std::string result = fmt::format(
+        "{}IfStatement\n{}Condition:\n{}\n{}Consequence:\n{}", Indent(indent),
+        Indent(indent + 1), condition_->ToString(indent + 2),
+        Indent(indent + 1), consequence_->ToString(indent + 2));
+    if (alternative_) {
+      result += fmt::format("\n{}Alternative:\n{}", Indent(indent + 1),
+                            alternative_->ToString(indent + 2));
+    }
+    return result;
+  }
+
  private:
   std::shared_ptr<Expression> condition_;
   std::shared_ptr<Statement> consequence_;
@@ -209,6 +290,13 @@ class WhileStatement : public Statement {
     return body_;
   }
 
+  std::string ToString(int indent = 0) const override {
+    return fmt::format("{}WhileStatement\n{}Condition:\n{}\n{}Body:\n{}",
+                       Indent(indent), Indent(indent + 1),
+                       condition_->ToString(indent + 2), Indent(indent + 1),
+                       body_->ToString(indent + 2));
+  }
+
  private:
   std::shared_ptr<Expression> condition_;
   std::shared_ptr<Statement> body_;
@@ -226,6 +314,13 @@ class TimesStatement : public Statement {
   }
   std::shared_ptr<Statement> GetBody() const {
     return body_;
+  }
+
+  std::string ToString(int indent = 0) const override {
+    return fmt::format("{}TimesStatement\n{}Count:\n{}\n{}Body:\n{}",
+                       Indent(indent), Indent(indent + 1),
+                       count_->ToString(indent + 2), Indent(indent + 1),
+                       body_->ToString(indent + 2));
   }
 
  private:
@@ -253,6 +348,24 @@ class FunctionDeclaration : public Statement {
     return body_;
   }
 
+  std::string ToString(int indent = 0) const override {
+    std::string params;
+    if (parameters_.empty()) {
+      params = " <no parameters>";
+    } else {
+      for (size_t i = 0; i < parameters_.size(); ++i) {
+        if (i > 0) {
+          params += ", ";
+        }
+        params += parameters_[i];
+      }
+    }
+
+    return fmt::format("{}FunctionDeclaration(name=\"{}\", params=[{}])\n{}",
+                       Indent(indent), name_, params,
+                       body_->ToString(indent + 1));
+  }
+
  private:
   std::string name_;
   std::vector<std::string> parameters_;
@@ -269,6 +382,14 @@ class ReturnStatement : public Statement {
     return value_;
   }
 
+  std::string ToString(int indent = 0) const override {
+    if (value_) {
+      return fmt::format("{}ReturnStatement\n{}", Indent(indent),
+                         value_->ToString(indent + 1));
+    }
+    return fmt::format("{}ReturnStatement <no value>", Indent(indent));
+  }
+
  private:
   std::shared_ptr<Expression> value_;
 };
@@ -281,6 +402,18 @@ class Program : public Object {
 
   const std::vector<std::shared_ptr<Statement>>& GetStatements() const {
     return statements_;
+  }
+
+  std::string ToString(int indent = 0) const override {
+    std::string result = fmt::format("{}Program", Indent(indent));
+    if (statements_.empty()) {
+      result += " <empty>";
+    } else {
+      for (const auto& stmt : statements_) {
+        result += fmt::format("\n{}", stmt->ToString(indent + 1));
+      }
+    }
+    return result;
   }
 
  private:

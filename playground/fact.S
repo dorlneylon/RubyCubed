@@ -1,5 +1,4 @@
 _start:
-    li x2, 5000
     li x5, 5
     addi x2, x2, -4
     sw x2, 0, x5

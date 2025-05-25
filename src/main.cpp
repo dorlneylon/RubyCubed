@@ -41,6 +41,10 @@ int main(int argc, char* argv[]) {
     parser::Parser parser(&tokenizer);
     parser::AstNode root = parser.Parse();
 
+    fmt::print("\n=== Abstract Syntax Tree ===\n");
+    fmt::print("{}\n", root->ToString());
+    fmt::print("===========================\n\n");
+
     backend::Worker worker(std::move(root));
     std::string assembly = worker.GenerateAssembly();
 
