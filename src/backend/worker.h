@@ -26,7 +26,6 @@ class Worker {
   Variables globals_;
   Variables params_;
   std::string current_function_;
-  StringTable string_literals_;
   static const StringTable kBinaryOpInstructions;
   static const StringTable kRuntimeHelpers;
   int label_counter_ = 0;

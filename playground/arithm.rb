@@ -5,9 +5,9 @@ if r == 2
         r = r * r
     end
     puts r
-elsif r == 4 
-    puts "incorrect"
-    puts r
+# elsif r == 4 
+#     puts "incorrect"
+#     puts r
 else
     puts "unsure"
     puts r

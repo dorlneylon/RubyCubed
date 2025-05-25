@@ -66,27 +66,26 @@ TEST_F(BackendTest, SimpleIntegerAssignment) {
   std::string assembly = GenerateAssemblyForInput("x = 42");
 
   EXPECT_FALSE(AssemblyContains(assembly, ".string"));
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 42"));
-  EXPECT_TRUE(AssemblyContains(assembly, "sw t0,"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 42"));
+  EXPECT_TRUE(AssemblyContains(assembly, "sw x3,"));
 }
 
 TEST_F(BackendTest, StringLiteralHandling) {
   std::string assembly =
       GenerateAssemblyForInput("message = \"Hello, World!\"");
 
-  EXPECT_TRUE(AssemblyContains(assembly, ".data"));
-  EXPECT_TRUE(AssemblyContains(assembly, ".string \"Hello, World!\""));
+  EXPECT_TRUE(AssemblyContains(assembly, "data"));
   EXPECT_TRUE(AssemblyContains(assembly, "str_"));
-  EXPECT_TRUE(AssemblyContains(assembly, "sw t0,"));
+  EXPECT_TRUE(AssemblyContains(assembly, "sw x3,"));
 }
 
 TEST_F(BackendTest, SimpleArithmeticExpression) {
   std::string assembly = GenerateAssemblyForInput("result = 10 + 20");
 
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 10"));
-  EXPECT_TRUE(AssemblyContains(assembly, "li t1, 20"));
-  EXPECT_TRUE(AssemblyContains(assembly, "add t0, t0, t1"));
-  EXPECT_TRUE(AssemblyContains(assembly, "sw t0,"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 10"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x6, 20"));
+  EXPECT_TRUE(AssemblyContains(assembly, "add x5, x5, x6"));
+  EXPECT_TRUE(AssemblyContains(assembly, "sw x3,"));
 }
 
 // TODO: Incorrect testcase
@@ -113,8 +112,8 @@ TEST_F(BackendTest, SimpleArithmeticExpression) {
 TEST_F(BackendTest, ComparisonOperators) {
   std::string assembly = GenerateAssemblyForInput("result = 5 < 10");
 
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 5"));
-  EXPECT_TRUE(AssemblyContains(assembly, "li t1, 10"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 5"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x6, 10"));
   EXPECT_TRUE(AssemblyContains(assembly, "slt"));
 }
 
@@ -124,13 +123,13 @@ TEST_F(BackendTest, BasicIfStatement) {
       "  result = 42\n"
       "end");
 
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 1"));
-  EXPECT_TRUE(AssemblyContains(assembly, "li t1, 0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 1"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x6, 0"));
   EXPECT_TRUE(AssemblyContains(assembly, "slt"));
   EXPECT_TRUE(AssemblyContains(assembly, "beq"));
   EXPECT_TRUE(AssemblyContains(assembly, "else_"));
   EXPECT_TRUE(AssemblyContains(assembly, "endif_"));
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 42"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 42"));
 }
 
 TEST_F(BackendTest, IfElseStatement) {
@@ -142,9 +141,9 @@ TEST_F(BackendTest, IfElseStatement) {
       "end");
 
   EXPECT_TRUE(AssemblyContains(assembly, "beq"));
-  EXPECT_TRUE(AssemblyContains(assembly, "jal zero,"));
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 42"));
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 24"));
+  EXPECT_TRUE(AssemblyContains(assembly, "jal x0,"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 42"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 24"));
 }
 
 TEST_F(BackendTest, WhileLoop) {
@@ -159,7 +158,7 @@ TEST_F(BackendTest, WhileLoop) {
   EXPECT_TRUE(AssemblyContains(assembly, "loop_end_"));
   EXPECT_TRUE(AssemblyContains(assembly, "bne"));
   EXPECT_TRUE(AssemblyContains(assembly, "addi"));
-  EXPECT_TRUE(AssemblyContains(assembly, "jal zero,"));
+  EXPECT_TRUE(AssemblyContains(assembly, "jal x0,"));
 }
 
 TEST_F(BackendTest, TimesLoop) {
@@ -168,16 +167,16 @@ TEST_F(BackendTest, TimesLoop) {
       "  result = 42\n"
       "end");
 
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 5"));
-  EXPECT_TRUE(AssemblyContains(assembly, "li t1, 0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 5"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x6, 0"));
 
   EXPECT_TRUE(AssemblyContains(assembly, "times_loop_start_"));
   EXPECT_TRUE(AssemblyContains(assembly, "times_loop_end_"));
   EXPECT_TRUE(AssemblyContains(assembly, "bge"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "addi t1, t1, 1"));
+  EXPECT_TRUE(AssemblyContains(assembly, "addi x6, x6, 1"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 42"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 42"));
 }
 
 TEST_F(BackendTest, FunctionDeclaration) {
@@ -188,20 +187,20 @@ TEST_F(BackendTest, FunctionDeclaration) {
 
   EXPECT_TRUE(AssemblyContains(assembly, "add:"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "addi sp, sp, -4"));
-  EXPECT_TRUE(AssemblyContains(assembly, "sw fp, 0(sp)"));
-  EXPECT_TRUE(AssemblyContains(assembly, "sw ra, 0(sp)"));
-  EXPECT_TRUE(AssemblyContains(assembly, "mv fp, sp"));
+  EXPECT_TRUE(AssemblyContains(assembly, "addi x2, x2, -4"));
+  EXPECT_TRUE(AssemblyContains(assembly, "sw x2, 0, x8"));
+  EXPECT_TRUE(AssemblyContains(assembly, "sw x2, 0, x1"));
+  EXPECT_TRUE(AssemblyContains(assembly, "add x8, x2, x0"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "lw t0, 8(fp)"));   // Load a
-  EXPECT_TRUE(AssemblyContains(assembly, "lw t1, 12(fp)"));  // Load b
+  EXPECT_TRUE(AssemblyContains(assembly, "lw x5, x8, 8"));   // Load a
+  EXPECT_TRUE(AssemblyContains(assembly, "lw x6, x8, 12"));  // Load b
 
-  EXPECT_TRUE(AssemblyContains(assembly, "mv a0, t0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "add x10, x5, x0"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "mv sp, fp"));
-  EXPECT_TRUE(AssemblyContains(assembly, "lw ra, 0(sp)"));
-  EXPECT_TRUE(AssemblyContains(assembly, "lw fp, 0(sp)"));
-  EXPECT_TRUE(AssemblyContains(assembly, "jalr zero, ra, 0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "add x2, x8, x0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "lw x1, x2, 0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "lw x8, x2, 0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "jalr x0, x1, 0"));
 }
 
 TEST_F(BackendTest, FunctionCall) {
@@ -212,25 +211,26 @@ TEST_F(BackendTest, FunctionCall) {
       "\n"
       "result = add(5, 10)");
 
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 5"));   // First arg
-  EXPECT_TRUE(AssemblyContains(assembly, "li t1, 10"));  // Second arg
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 5"));   // First arg
+  EXPECT_TRUE(AssemblyContains(assembly, "li x6, 10"));  // Second arg
 
-  EXPECT_TRUE(AssemblyContains(assembly, "addi sp, sp, -4"));
-  EXPECT_TRUE(AssemblyContains(assembly, "sw t"));
+  EXPECT_TRUE(AssemblyContains(assembly, "addi x2, x2, -4"));
+  EXPECT_TRUE(AssemblyContains(assembly, "sw x2, 0,"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "jal ra, add"));
+  EXPECT_TRUE(AssemblyContains(assembly, "jal x1, add"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "mv t0, a0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "add x5, x10, x0"));
 }
 
 TEST_F(BackendTest, BuiltInPuts) {
   std::string assembly = GenerateAssemblyForInput("puts(\"Hello, World!\")");
-  EXPECT_TRUE(AssemblyContains(assembly, ".string \"Hello, World!\""));
+  EXPECT_FALSE(AssemblyContains(assembly, ".string"));
+  EXPECT_TRUE(AssemblyContains(assembly, "data"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "la"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5,"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "mv a0, t"));
-  EXPECT_TRUE(AssemblyContains(assembly, "jal ra, runtime_puts"));
+  EXPECT_TRUE(AssemblyContains(assembly, "add x10, x5, x0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "jal x1, runtime_puts"));
 
   EXPECT_TRUE(AssemblyContains(assembly, "runtime_puts:"));
   EXPECT_TRUE(AssemblyContains(assembly, "ewrite"));
@@ -242,11 +242,11 @@ TEST_F(BackendTest, ReturnStatement) {
       "  return 42\n"
       "end");
 
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 42"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 42"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "mv a0, t0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "add x10, x5, x0"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "jal zero,"));
+  EXPECT_TRUE(AssemblyContains(assembly, "jal x0,"));
 }
 
 TEST_F(BackendTest, EmptyReturn) {
@@ -255,7 +255,7 @@ TEST_F(BackendTest, EmptyReturn) {
       "  return\n"
       "end");
 
-  EXPECT_TRUE(AssemblyContains(assembly, "li a0, 0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x10, 0"));
 }
 
 TEST_F(BackendTest, ComplexProgram) {
@@ -274,17 +274,19 @@ TEST_F(BackendTest, ComplexProgram) {
 
   EXPECT_TRUE(AssemblyContains(assembly, "factorial:"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "jal ra, factorial"));
+  EXPECT_TRUE(AssemblyContains(assembly, "jal x1, factorial"));
 
   EXPECT_TRUE(AssemblyContains(assembly, "sle") ||
               (AssemblyContains(assembly, "slt") &&
                AssemblyContains(assembly, "xori")));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 5"));
-  EXPECT_TRUE(AssemblyContains(assembly, "jal ra, factorial"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 5"));
+  EXPECT_TRUE(AssemblyContains(assembly, "jal x1, factorial"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, ".string \"Factorial of 5 is: \""));
-  EXPECT_TRUE(AssemblyContains(assembly, "jal ra, runtime_puts"));
+  EXPECT_FALSE(AssemblyContains(assembly, ".string"));
+  EXPECT_TRUE(AssemblyContains(assembly, "data"));
+
+  EXPECT_TRUE(AssemblyContains(assembly, "jal x1, runtime_puts"));
 }
 
 // TODO: ~ is unsupported yet
@@ -294,12 +296,12 @@ TEST_F(BackendTest, ComplexProgram) {
 //       "b = !0\n"
 //       "c = -42");
 
-//   EXPECT_TRUE(AssemblyContains(assembly, "li t0, 5"));
-//   EXPECT_TRUE(AssemblyContains(assembly, "sub t0, zero, t0"));
-//   EXPECT_TRUE(AssemblyContains(assembly, "li t0, 0"));
-//   EXPECT_TRUE(AssemblyContains(assembly, "seq t0, t0, zero"));
-//   EXPECT_TRUE(AssemblyContains(assembly, "li t0, 42"));
-//   EXPECT_TRUE(AssemblyContains(assembly, "xori t0, t0, -1"));
+//   EXPECT_TRUE(AssemblyContains(assembly, "li x5, 5"));
+//   EXPECT_TRUE(AssemblyContains(assembly, "sub x5, x0, x5"));
+//   EXPECT_TRUE(AssemblyContains(assembly, "li x5, 0"));
+//   EXPECT_TRUE(AssemblyContains(assembly, "seq x5, x5, x0"));
+//   EXPECT_TRUE(AssemblyContains(assembly, "li x5, 42"));
+//   EXPECT_TRUE(AssemblyContains(assembly, "xori x5, x5, -1"));
 // }
 
 TEST_F(BackendTest, GlobalScope) {
@@ -309,7 +311,7 @@ TEST_F(BackendTest, GlobalScope) {
       "  return x\n"
       "end");
 
-  EXPECT_TRUE(AssemblyContains(assembly, ".globl _start"));
+  EXPECT_FALSE(AssemblyContains(assembly, ".globl _start"));
   EXPECT_TRUE(AssemblyContains(assembly, "_start:"));
 
   EXPECT_TRUE(AssemblyContains(assembly, "ebreak"));
@@ -321,10 +323,10 @@ TEST_F(BackendTest, RuntimeHelpers) {
   EXPECT_TRUE(AssemblyContains(assembly, "# --- Runtime Helper Functions ---"));
   EXPECT_TRUE(AssemblyContains(assembly, "runtime_puts:"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "lb t0, 0(a0)"));
-  EXPECT_TRUE(AssemblyContains(assembly, "ewrite t0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "lw x5, x10, 0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "ewrite x5"));
 
-  EXPECT_TRUE(AssemblyContains(assembly, "li t0, 10") ||
-              AssemblyContains(assembly, "li t0, '\\n'"));
-  EXPECT_TRUE(AssemblyContains(assembly, "ewrite t0"));
+  EXPECT_TRUE(AssemblyContains(assembly, "li x5, 10") ||
+              AssemblyContains(assembly, "li x5, '\\n'"));
+  EXPECT_TRUE(AssemblyContains(assembly, "ewrite x5"));
 }
