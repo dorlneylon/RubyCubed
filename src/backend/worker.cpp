@@ -1,5 +1,6 @@
 #include "worker.h"
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -617,7 +618,7 @@ void Worker::ProcessBuiltInFunction(
   if (func_name == "puts") {
     if (!args.empty()) {
       assembly << "    add x10, x5, x0\n";
-      if (std::dynamic_pointer_cast<parser::StringLiteral>(args[0])) {
+      if (IsStringExpression(args[0])) {
         assembly << "    li x20, 0\n";
       } else {
         assembly << "    li x20, 1\n";
@@ -629,6 +630,25 @@ void Worker::ProcessBuiltInFunction(
     assembly << "    jal x1, runtime_puts\n";
     assembly << "    li x5, 0\n";
   }
+}
+
+bool Worker::IsStringExpression(
+    const std::shared_ptr<parser::Expression>& expr) {
+  if (std::dynamic_pointer_cast<parser::StringLiteral>(expr)) {
+    return true;
+  }
+
+  if (auto id = std::dynamic_pointer_cast<parser::Identifier>(expr)) {
+    const std::string& name = id->GetName();
+
+    if (std::any_of(
+            data_section_.begin(), data_section_.end(),
+            [name](const auto& entry) { return entry.first.contains(name); })) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void Worker::ProcessRegularFunctionCall(

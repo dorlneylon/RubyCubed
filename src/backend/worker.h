@@ -74,6 +74,7 @@ class Worker {
                               std::stringstream& assembly);
   void ProcessCallExpression(std::shared_ptr<parser::CallExpression> call,
                              std::stringstream& assembly);
+  bool IsStringExpression(const std::shared_ptr<parser::Expression>& expr);
 
   std::string GenerateLabel(const std::string& prefix);
   std::string GenerateStringLabel(const std::string& str);
@@ -104,7 +105,7 @@ class Worker {
       std::shared_ptr<parser::BinaryExpression> binary);
   void ProcessMethodCall(std::shared_ptr<parser::CallExpression> call,
                          std::stringstream& assembly);
-  static void ProcessBuiltInFunction(
+  void ProcessBuiltInFunction(
       const std::string& func_name,
       const std::vector<std::shared_ptr<parser::Expression>>& args,
       std::stringstream& assembly);
